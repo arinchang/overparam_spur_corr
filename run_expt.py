@@ -12,6 +12,7 @@ from train import train
 from variable_width_resnet import resnet50vw, resnet18vw, resnet10vw
 
 def main():
+    print("Testing: begin in main function of run_expt.py")
     parser = argparse.ArgumentParser()
 
     # Settings
@@ -87,7 +88,7 @@ def main():
     if not os.path.exists(args.log_dir):
         os.makedirs(args.log_dir)
 
-    logger = Logger(os.path.join(args.log_dir, 'log.txt'), mode)
+    logger = Logger(os.path.join(args.log_dir, 'log1.txt'), mode)
     # Record args
     log_args(args, logger)
 
@@ -118,6 +119,8 @@ def main():
     n_classes = train_data.n_classes
 
     log_data(data, logger)
+
+    print("TESTING: LOADED DATA")
 
     ## Initialize model
     pretrained = not args.train_from_scratch
@@ -198,6 +201,8 @@ def main():
     train_csv_logger = CSVBatchLogger(os.path.join(args.log_dir, 'train.csv'), train_data.n_groups, mode=mode)
     val_csv_logger =  CSVBatchLogger(os.path.join(args.log_dir, 'val.csv'), train_data.n_groups, mode=mode)
     test_csv_logger =  CSVBatchLogger(os.path.join(args.log_dir, 'test.csv'), train_data.n_groups, mode=mode)
+
+    print("TESTING: ABOUT TO BEGIN MODEL TRAINING")
 
     train(model, criterion, data, logger, train_csv_logger, val_csv_logger, test_csv_logger, args, epoch_offset=epoch_offset)
 

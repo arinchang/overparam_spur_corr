@@ -1,7 +1,7 @@
 import numpy as np
 import argparse
 from toy_example_data import *
-from random_feature_utils import *
+from random_feature_imutils import *
 
 def main():
     parser = argparse.ArgumentParser()
@@ -93,7 +93,7 @@ def process_args(args):
     data_args = {}
     for argname in required_args:
         argval = getattr(args, argname)
-        assert argval is not None, f'{argname} must be specified'
+        assert argval is not None, f"{argname} must be specified"
         data_args[argname] = argval
     args.data_args = data_args
     args.data_generation_fn = data_generation_fn
