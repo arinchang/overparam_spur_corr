@@ -8,14 +8,15 @@ import torchvision
 from models import model_attributes
 from data.data import dataset_attributes, shift_types, prepare_data, log_data
 from utils import set_seed, Logger, CSVBatchLogger, log_args
-from train import train
+# from train import train
+from dp_train import train
 from variable_width_resnet import resnet50vw, resnet18vw, resnet10vw
 
 def main():
-    print("Testing: begin in main function of run_expt.py")
     parser = argparse.ArgumentParser()
 
     # Settings
+    parser.add_argument('-id', type=int, default=0)
     parser.add_argument('-d', '--dataset', choices=dataset_attributes.keys(), required=True)
     parser.add_argument('-s', '--shift_type', choices=shift_types, required=True)
     # Confounders
@@ -88,7 +89,7 @@ def main():
     if not os.path.exists(args.log_dir):
         os.makedirs(args.log_dir)
 
-    logger = Logger(os.path.join(args.log_dir, 'log1.txt'), mode)
+    logger = Logger(os.path.join(args.log_dir, f'log_{args.id}.txt'), mode)
     # Record args
     log_args(args, logger)
 
@@ -120,7 +121,7 @@ def main():
 
     log_data(data, logger)
 
-    print("TESTING: LOADED DATA")
+    print("LOADED DATA")
 
     ## Initialize model
     pretrained = not args.train_from_scratch
@@ -198,11 +199,11 @@ def main():
         logger.write(f'starting from epoch {epoch_offset}')
     else:
         epoch_offset=0
-    train_csv_logger = CSVBatchLogger(os.path.join(args.log_dir, 'train.csv'), train_data.n_groups, mode=mode)
-    val_csv_logger =  CSVBatchLogger(os.path.join(args.log_dir, 'val.csv'), train_data.n_groups, mode=mode)
-    test_csv_logger =  CSVBatchLogger(os.path.join(args.log_dir, 'test.csv'), train_data.n_groups, mode=mode)
+    train_csv_logger = CSVBatchLogger(os.path.join(args.log_dir, f'train_{args.id}.csv'), train_data.n_groups, mode=mode)
+    val_csv_logger =  CSVBatchLogger(os.path.join(args.log_dir, f'val_{args.id}.csv'), train_data.n_groups, mode=mode)
+    test_csv_logger =  CSVBatchLogger(os.path.join(args.log_dir, f'test_{args.id}.csv'), train_data.n_groups, mode=mode)
 
-    print("TESTING: ABOUT TO BEGIN MODEL TRAINING")
+    print("BEGIN MODEL TRAINING")
 
     train(model, criterion, data, logger, train_csv_logger, val_csv_logger, test_csv_logger, args, epoch_offset=epoch_offset)
 
