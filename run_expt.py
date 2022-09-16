@@ -16,9 +16,12 @@ def main():
     parser = argparse.ArgumentParser()
 
     # Settings
-    parser.add_argument('-id', type=int, default=0)
+    parser.add_argument('-id', default=None)
     parser.add_argument('-d', '--dataset', choices=dataset_attributes.keys(), required=True)
     parser.add_argument('-s', '--shift_type', choices=shift_types, required=True)
+    # Privacy
+    parser.add_argument('--noise', type=float)
+    parser.add_argument('--max_per_sample_grad_norm', type=float)
     # Confounders
     parser.add_argument('-t', '--target_name')
     parser.add_argument('-c', '--confounder_names', nargs='+')

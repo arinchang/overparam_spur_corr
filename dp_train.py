@@ -13,6 +13,7 @@ from tqdm import tqdm
 from utils import AverageMeter, accuracy
 from loss import LossComputer
 from opacus import PrivacyEngine
+from opacus.validators import ModuleValidator
 
 from pytorch_transformers import AdamW, WarmupLinearSchedule
 
@@ -85,7 +86,9 @@ def run_epoch(epoch, model, optimizer, loader, loss_computer, logger, csv_logger
 def train(model, criterion, dataset,
           logger, train_csv_logger, val_csv_logger, test_csv_logger,
           args, epoch_offset):
+    model = ModuleValidator.fix(model)
     model = model.cuda()
+
 
     # process generalization adjustment stuff
     adjustments = [float(c) for c in args.generalization_adjustment.split(',')]
@@ -142,12 +145,12 @@ def train(model, criterion, dataset,
         else:
             scheduler = None
 
-    privacy_engine = PrivacyEngine(accountant='gdp')
+    privacy_engine = PrivacyEngine()
     model, optimizer, train_loader = privacy_engine.make_private(
         module=model,
         optimizer=optimizer,
         data_loader=dataset['train_loader'],
-        noise_multiplier=args.sigma,
+        noise_multiplier=args.noise,
         max_grad_norm=args.max_per_sample_grad_norm,
         poisson_sampling=False
     )
@@ -166,7 +169,7 @@ def train(model, criterion, dataset,
             log_every=args.log_every,
             scheduler=scheduler)
 
-        curr_epsilon = privacy_engine.get_epsilon(0)
+        curr_epsilon = privacy_engine.get_epsilon(1e-5)
         logger.write(f'\nCurrent privacy budget expended: {curr_epsilon} \n')
 
         logger.write(f'\nValidation:\n')
