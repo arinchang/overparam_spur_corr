@@ -152,7 +152,7 @@ def train(model, criterion, dataset,
         data_loader=dataset['train_loader'],
         noise_multiplier=args.noise,
         max_grad_norm=args.max_per_sample_grad_norm,
-        poisson_sampling=False
+        poisson_sampling=args.poisson_sampling
     )
 
     best_val_acc = 0

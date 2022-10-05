@@ -1,3 +1,4 @@
+from operator import truediv
 import os, csv
 import argparse
 import pandas as pd
@@ -8,8 +9,7 @@ import torchvision
 from models import model_attributes
 from data.data import dataset_attributes, shift_types, prepare_data, log_data
 from utils import set_seed, Logger, CSVBatchLogger, log_args
-# from train import train
-from dp_train import train
+from train import train
 from variable_width_resnet import resnet50vw, resnet18vw, resnet10vw
 
 def main():
@@ -19,9 +19,6 @@ def main():
     parser.add_argument('-id', default=None)
     parser.add_argument('-d', '--dataset', choices=dataset_attributes.keys(), required=True)
     parser.add_argument('-s', '--shift_type', choices=shift_types, required=True)
-    # Privacy
-    parser.add_argument('--noise', type=float)
-    parser.add_argument('--max_per_sample_grad_norm', type=float)
     # Confounders
     parser.add_argument('-t', '--target_name')
     parser.add_argument('-c', '--confounder_names', nargs='+')
