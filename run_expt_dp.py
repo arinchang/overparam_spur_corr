@@ -22,7 +22,7 @@ def main():
     # Privacy
     parser.add_argument('--noise', type=float)
     parser.add_argument('--max_per_sample_grad_norm', type=float)
-    parser.add_argument('--poisson_sampling', default=True)
+    parser.add_argument('--poisson_sampling', default=False)
     # Confounders
     parser.add_argument('-t', '--target_name')
     parser.add_argument('-c', '--confounder_names', nargs='+')
