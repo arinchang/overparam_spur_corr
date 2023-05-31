@@ -65,10 +65,23 @@ def run_epoch(epoch, model, optimizer, loader, loss_computer, logger, csv_logger
                     optimizer.step()
                     model.zero_grad()
                 else:
+                    # for m in model.modules():
+                    #     if isinstance(m, nn.Conv2d):
+                    #         print(f"m.weight.grad for conv2d: {m.weight.grad.abs()}")
+                    #     elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                    #         print(f"m.weight.grad for batchnorm2d: {m.weight.grad.abs()}")
+                    #         print(f"m.bias.grad for batchnorm2d: {m.bias.grad.abs()}")
                     optimizer.zero_grad()
                     loss_main.backward()
                     optimizer.step()
 
+                    # for m in model.modules():
+                    #     if isinstance(m, nn.Conv2d):
+                    #         print(f"m.weight.grad for conv2d: {m.weight.grad.abs()}")
+                    #     elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                    #         print(f"m.weight.grad for batchnorm2d: {m.weight.grad.abs()}")
+                    #         print(f"m.bias.grad for batchnorm2d: {m.bias.grad.abs()}")
+                            
             if is_training and (batch_idx+1) % log_every==0:
                 csv_logger.log(epoch, batch_idx, loss_computer.get_stats(model, args))
                 csv_logger.flush()

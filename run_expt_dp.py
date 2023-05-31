@@ -19,6 +19,7 @@ def main():
     parser.add_argument('-id', default=None)
     parser.add_argument('-d', '--dataset', choices=dataset_attributes.keys(), required=True)
     parser.add_argument('-s', '--shift_type', choices=shift_types, required=True)
+    parser.add_argument('--random_seed', default=None)
     # Privacy
     parser.add_argument('--noise', type=float)
     parser.add_argument('--max_per_sample_grad_norm', type=float)
@@ -161,7 +162,7 @@ def main():
     elif args.model =='resnet10vw':
         assert not pretrained
         assert args.resnet_width is not None
-        model = resnet10vw(args.resnet_width, num_classes=n_classes)
+        model = resnet10vw(args.resnet_width, args.random_seed, num_classes=n_classes)
     elif args.model == 'bert':
         assert args.dataset == 'MultiNLI'
 

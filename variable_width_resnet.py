@@ -109,7 +109,7 @@ class Bottleneck(nn.Module):
 
 class VariableWidthResNet(nn.Module):
 
-    def __init__(self, block, layers, width, num_classes=1000, zero_init_residual=False,
+    def __init__(self, block, layers, width, random_seed, num_classes=1000, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None,
                  norm_layer=None):
         super(VariableWidthResNet, self).__init__()
@@ -145,10 +145,17 @@ class VariableWidthResNet(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
+                if random_seed:
+                    torch.manual_seed(random_seed)
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                print(f"m.weight for conv2d: {m.weight}")
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                if random_seed:
+                    torch.manual_seed(random_seed)
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
+                print(f"m.weight for batchnorm2d: {m.weight}")
+                print(f"m.bias for batchnorm2d: {m.bias}")
 
         # Zero-initialize the last BN in each residual branch,
         # so that the residual branch starts with zeros, and each residual block behaves like an identity.
@@ -156,8 +163,12 @@ class VariableWidthResNet(nn.Module):
         if zero_init_residual:
             for m in self.modules():
                 if isinstance(m, Bottleneck):
+                    if random_seed:
+                        torch.manual_seed(random_seed)
                     nn.init.constant_(m.bn3.weight, 0)
                 elif isinstance(m, BasicBlock):
+                    if random_seed:
+                        torch.manual_seed(random_seed)
                     nn.init.constant_(m.bn2.weight, 0)
 
     def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
@@ -206,20 +217,20 @@ class VariableWidthResNet(nn.Module):
         return self._forward_impl(x)
 
 
-def _vwresnet(arch, block, layers, width, pretrained, progress, **kwargs):
+def _vwresnet(arch, block, layers, width, pretrained, progress, random_seed, **kwargs):
     assert not pretrained, "No pretrained model for variable width ResNets"
-    model = VariableWidthResNet(block, layers, width, **kwargs)
+    model = VariableWidthResNet(block, layers, width, random_seed, **kwargs)
     return model
 
 
-def resnet10vw(width, pretrained=False, progress=True, **kwargs):
+def resnet10vw(width, random_seed, pretrained=False, progress=True, **kwargs):
     r"""ResNet-18 model from
     `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
         progress (bool): If True, displays a progress bar of the download to stderr
     """
-    return _vwresnet('resnet10', BasicBlock, [1, 1, 1, 1], width, pretrained, progress,
+    return _vwresnet('resnet10', BasicBlock, [1, 1, 1, 1], width, pretrained, progress, random_seed,
                    **kwargs)
 
 
