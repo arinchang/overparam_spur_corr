@@ -5,11 +5,12 @@ from torch.utils.data import Subset
 from data.label_shift_utils import prepare_label_shift_data
 from data.confounder_utils import prepare_confounder_data
 
-root_dir = '/home/eecs/arinchang/overparam_spur_corr'
+# root_dir = '/home/eecs/arinchang/overparam_spur_corr'
+root_dir = '/global/scratch/users/arinchang'
 
 dataset_attributes = {
     'CelebA': {
-        'root_dir': 'celebA'
+        'root_dir': 'celebA_dataset'
     },
     'CUB': {
         'root_dir': 'cub'
@@ -22,7 +23,7 @@ dataset_attributes = {
     }
 }
 
-for dataset in dataset_attributes:
+for dataset in dataset_attributes: 
     dataset_attributes[dataset]['root_dir'] = os.path.join(root_dir, dataset_attributes[dataset]['root_dir'])
 
 shift_types = ['confounder', 'label_shift_step']
@@ -34,7 +35,7 @@ def prepare_data(args, train, return_full_dataset=False):
     if args.shift_type=='confounder':
         return prepare_confounder_data(args, train, return_full_dataset)
     elif args.shift_type.startswith('label_shift'):
-        assert not return_full_dataset
+        assert not return_full_dataset 
         return prepare_label_shift_data(args, train)
 
 def log_data(data, logger):

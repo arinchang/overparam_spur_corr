@@ -13,7 +13,7 @@ from tqdm import tqdm
 from utils import AverageMeter, accuracy
 from loss import LossComputer
 from opacus import PrivacyEngine
-from opacus.validators import ModuleValidator
+from opacus.validators import ModuleValidator 
 
 from pytorch_transformers import AdamW, WarmupLinearSchedule
 
@@ -151,7 +151,7 @@ def train(model, criterion, dataset,
                 optimizer,
                 'min',
                 factor=0.1,
-                patience=5,
+                patience=5, 
                 threshold=0.0001,
                 min_lr=0,
                 eps=1e-08)

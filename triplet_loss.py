@@ -10,7 +10,7 @@ class TripletMarginLoss(nn.Module):
     def __init__(self, margin=1.0, p=2.0, mining="batch_all"):
         super().__init__()
         self.margin = margin
-        self.p = p
+        self.p = p 
         self.mining = mining
 
         if mining == "batch_all":

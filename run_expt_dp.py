@@ -6,10 +6,10 @@ import torch
 import torch.nn as nn
 import torchvision
 
-from models import model_attributes
+from models import model_attributes 
 from data.data import dataset_attributes, shift_types, prepare_data, log_data
 from utils import set_seed, Logger, CSVBatchLogger, log_args
-from dp_train import train
+from dp_train import train 
 from variable_width_resnet import resnet50vw, resnet18vw, resnet10vw
 
 def main():
@@ -25,7 +25,7 @@ def main():
     parser.add_argument('--max_per_sample_grad_norm', type=float)
     parser.add_argument('--poisson_sampling', default=False)
     # Confounders
-    parser.add_argument('-t', '--target_name')
+    parser.add_argument('-t', '--target_name') 
     parser.add_argument('-c', '--confounder_names', nargs='+')
     # Resume?
     parser.add_argument('--resume', default=False, action='store_true')
@@ -103,7 +103,7 @@ def main():
     # Data
     # Test data for label_shift_step is not implemented yet
     test_data = None
-    test_loader = None
+    test_loader = None  
     if args.shift_type == 'confounder':
         train_data, val_data, test_data = prepare_data(args, train=True)
     elif args.shift_type == 'label_shift_step':

@@ -1,24 +1,27 @@
 import os
-
+import pandas as pd 
+import numpy as np 
 import torch
 import torchvision.transforms as transforms
 from triplet_loss import TripletMarginLoss
 # from model import EmbeddingNet
 from triplet_loss_sampler import PKSampler
 
-from torch.optim import Adam
+from torch.optim import Adam 
 from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, Subset
 from torchvision.datasets import FashionMNIST
 
-from data.celebA_dataset import celebADataset
+from data.celebA_dataset import CelebADataset
 from variable_width_resnet import resnet50vw, resnet18vw, resnet10vw
-
+ 
 
 
 def train_epoch(model, optimizer, criterion, data_loader, device, epoch, print_freq):
     model.train()
     running_loss = 0
     running_frac_pos_triplets = 0
+    print(f"TEST DATA_LOADER{data_loader}")
     for i, data in enumerate(data_loader):
         optimizer.zero_grad()
         # NOTE: each data point has a target list which contains classes 
@@ -36,13 +39,13 @@ def train_epoch(model, optimizer, criterion, data_loader, device, epoch, print_f
         running_loss += loss.item()
         running_frac_pos_triplets += float(frac_pos_triplets)
 
-        if i % print_freq == print_freq - 1:
-            i += 1
-            avg_loss = running_loss / print_freq
-            avg_trip = 100.0 * running_frac_pos_triplets / print_freq
-            print(f"[{epoch:d}, {i:d}] | loss: {avg_loss:.4f} | % avg hard triplets: {avg_trip:.2f}%")
-            running_loss = 0
-            running_frac_pos_triplets = 0
+        # if i % print_freq == print_freq - 1:
+        #     i += 1
+        avg_loss = running_loss / print_freq
+        avg_trip = 100.0 * running_frac_pos_triplets / print_freq
+        print(f"[{epoch:d}, {i:d}] | loss: {avg_loss:.4f} | % avg hard triplets: {avg_trip:.2f}%")
+        running_loss = 0
+        running_frac_pos_triplets = 0
 
 
 def find_best_threshold(dists, targets, device):
@@ -69,7 +72,7 @@ def evaluate(model, loader, device):
     for data in loader:
         samples, _labels = data[0].to(device), data[1]
         out = model(samples)
-        embeds.append(out)
+        embeds.append(out) 
         labels.append(_labels)
 
     embeds = torch.cat(embeds, dim=0)
@@ -109,7 +112,7 @@ def main(args):
     k = args.samples_per_label
     batch_size = p * k
 
-    model = resnet10vw(32, num_classes=2)
+    model = resnet10vw(32, None, num_classes=2)
     if args.resume:
         model.load_state_dict(torch.load(args.resume))
 
@@ -127,50 +130,56 @@ def main(args):
         ]
     )
 
-    # Using FMNIST to demonstrate embedding learning using triplet loss. This dataset can
-    # be replaced with any classification dataset.
-
-    # train_dataset = FashionMNIST(args.dataset_dir, train=True, transform=transform, download=True)
-    # test_dataset = FashionMNIST(args.dataset_dir, train=False, transform=transform, download=True)
-
-    # targets is a list where the i_th element corresponds to the label of i_th dataset element.
-    # This is required for PKSampler to randomly sample from exactly p classes. You will need to
-    # construct targets while building your dataset. Some datasets (such as ImageFolder) have a
-    # targets attribute with the same format.
-    # targets = train_dataset.targets.tolist()
-
-    print(f"LOADING CELEBA DATASET")
-    #TODO: load celebA dataset
-    train_dataset = celebADataset(root_dir="/home/eecs/arinchang/overparam_spur_corr/celebA",
-        target_name="Blond_Hair",
-        confounder_names="Male",
-        model_type="resnet10wv",
+    print(f"LOADING CELEBA DATASET")   
+    # load full dataset using CelebADataset
+    full_dataset = CelebADataset(root_dir="/global/scratch/users/arinchang/celebA_dataset",
+        target_name='Blond_Hair',
+        confounder_names=['Male'],
+        model_type='resnet10vw',
         augment_data=False)
-    
+
+    # split full dataset into train, val, test splits using torch.utils.data Subset. Based on get_splits function in 
+    # confounder_dataset.py
+    splits = ['train', 'val', 'test']
+    split_df = pd.read_csv('/global/scratch/users/arinchang/celebA_dataset/data/list_eval_partition.csv')
+    split_array = split_df['partition'].values
+    split_dict = {
+        'train': 0,
+        'val': 1,
+        'test': 2
+    }
+    subsets = {} 
+    for split in splits:
+        split_mask = split_array == split_dict[split]
+        num_split = np.sum(split_mask)
+        indices = np.where(split_mask)[0]
+        subsets[split] = Subset(full_dataset, indices)
+
+    train_dataset = subsets['train']
+    val_dataset = subsets['val']
+    test_dataset = subsets['test']
     print(f"LOADED CELEBA DATASET")
     
     #construct targets list for celebA by mapping data points to group number (0-3) using their male attribute and class 
     # 0: male 0 blonde 0, 1: male 0 blonde 1, 2: male 1 blonde 0, 3: male 1 blonde 1
     targets = []
-    for i in range(len(train_dataset.y_array)):
-        if train_dataset.y_array[i] == 0 and train_dataset.confounder_array[i] == 0:
+    train_map = split_array == split_dict['train']
+    train_indices = np.where(train_map)[0]
+    for idx in train_indices:
+        if full_dataset.y_array[idx] == 0 and full_dataset.confounder_array[idx] == 0:
             targets.append(0)
-        elif train_dataset.y_array[i] == 1 and train_dataset.confounder_array[i] == 0:
+        elif full_dataset.y_array[idx] == 1 and full_dataset.confounder_array[idx] == 0:
             targets.append(1)
-        elif train_dataset.y_array[i] == 0 and train_dataset.confounder_array[i] == 1:
+        elif full_dataset.y_array[idx] == 0 and full_dataset.confounder_array[idx] == 1:
             targets.append(2)
-        elif train_dataset.y_array[i] == 0 and train_dataset.confounder_array[i] == 1:
+        elif full_dataset.y_array[idx] == 1 and full_dataset.confounder_array[idx] == 1:
             targets.append(3)
-    print(f"TESTING PRINT TARGETS: {targets}")
-
-
 
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, sampler=PKSampler(targets, p, k), num_workers=args.workers
     )
+    val_loader = DataLoader(val_dataset, batch_size=args.eval_batch_size, shuffle=False, num_workers=args.workers)
     test_loader = DataLoader(test_dataset, batch_size=args.eval_batch_size, shuffle=False, num_workers=args.workers)
-
-    
 
     if args.test_only:
         # We disable the cudnn benchmarking because it can noticeably affect the accuracy
@@ -178,8 +187,6 @@ def main(args):
         torch.backends.cudnn.deterministic = True
         evaluate(model, test_loader, device)
         return
-
-    # print(f"FINISH FOR NOW")
 
     for epoch in range(1, args.epochs + 1):
         print("Training...")
@@ -192,14 +199,14 @@ def main(args):
         save(model, epoch, args.save_dir, "ckpt.pth")
 
 
-def parse_args():
+def parse_args(): 
     import argparse
 
     parser = argparse.ArgumentParser(description="PyTorch Embedding Learning")
 
-    parser.add_argument("--dataset-dir", default="/tmp/fmnist/", type=str, help="FashionMNIST dataset directory path")
+    parser.add_argument("--dataset-dir", default="/global/scratch/users/arinchang/celebA_dataset", type=str, help="celebA dataset directory path")
     parser.add_argument(
-        "-p", "--labels-per-batch", default=8, type=int, help="Number of unique labels/classes per batch"
+        "-p", "--labels-per-batch", default=4, type=int, help="Number of unique labels/classes per batch"
     )
     parser.add_argument("-k", "--samples-per-label", default=8, type=int, help="Number of samples per label in a batch")
     parser.add_argument("--eval-batch-size", default=512, type=int, help="batch size for evaluation")

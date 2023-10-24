@@ -8,7 +8,7 @@ from models import model_attributes
 from torch.utils.data import Dataset, Subset
 from data.confounder_dataset import ConfounderDataset
 
-class CelebADataset(ConfounderDataset):
+class CelebADataset(ConfounderDataset): 
     """
     CelebA dataset (already cropped and centered).
     Note: idx and filenames are off by one.
@@ -23,14 +23,16 @@ class CelebADataset(ConfounderDataset):
         self.model_type = model_type
 
         # Read in attributes
-        self.attrs_df = pd.read_csv(
-            os.path.join(root_dir, 'data', 'list_attr_celeba.csv'))
+        self.attrs_df = pd.read_csv(os.path.join(root_dir, 'data', 'list_attr_celeba.csv'))
 
         # Split out filenames and attribute names
         self.data_dir = os.path.join(self.root_dir, 'data', 'img_align_celeba')
         self.filename_array = self.attrs_df['image_id'].values
         self.attrs_df = self.attrs_df.drop(labels='image_id', axis='columns')
         self.attr_names = self.attrs_df.columns.copy()
+        # print(f"TEST COLUMNS: {self.attr_names}")
+        # print(f"TEST CONFOUNDER NAMES:{self.confounder_names}")
+        # print(f"TEST: {self.attr_idx(self.confounder_names)}")
 
         # Then cast attributes to numpy array and set them to 0 and 1
         # (originally, they're -1 and 1)
