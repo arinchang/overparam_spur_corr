@@ -21,16 +21,16 @@ def train_epoch(model, optimizer, criterion, data_loader, device, epoch, print_f
     model.train()
     running_loss = 0
     running_frac_pos_triplets = 0
-    print(f"TEST DATA_LOADER{data_loader}")
+    # print(f"TEST DATA_LOADER{data_loader}")   
     for i, data in enumerate(data_loader):
         optimizer.zero_grad()
         # NOTE: each data point has a target list which contains classes 
         samples, targets = data[0].to(device), data[1].to(device)
         # print(f"SAMPLES VARIABLE: {samples}")
-        print(f"TARGETS VARIABLE: {targets}")
+        # print(f"TARGETS VARIABLE: {targets}")
 
         embeddings = model(samples)
-        print(f"EMBEDDINGS FOR DATA POINT {i}: {embeddings}")
+        # print(f"EMBEDDINGS FOR DATA POINT {i}: {embeddings}")
 
         loss, frac_pos_triplets = criterion(embeddings, targets)
         loss.backward()
@@ -109,7 +109,7 @@ def main(args):
         torch.backends.cudnn.benchmark = True
 
     p = args.labels_per_batch
-    k = args.samples_per_label
+    k = args.samples_per_label 
     batch_size = p * k
 
     model = resnet10vw(32, None, num_classes=2)
@@ -173,8 +173,8 @@ def main(args):
         elif full_dataset.y_array[idx] == 0 and full_dataset.confounder_array[idx] == 1:
             targets.append(2)
         elif full_dataset.y_array[idx] == 1 and full_dataset.confounder_array[idx] == 1:
-            targets.append(3)
-
+            targets.append(3) 
+    
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, sampler=PKSampler(targets, p, k), num_workers=args.workers
     )
@@ -208,7 +208,7 @@ def parse_args():
     parser.add_argument(
         "-p", "--labels-per-batch", default=4, type=int, help="Number of unique labels/classes per batch"
     )
-    parser.add_argument("-k", "--samples-per-label", default=8, type=int, help="Number of samples per label in a batch")
+    parser.add_argument("-k", "--samples-per-label", default=16, type=int, help="Number of samples per label in a batch")
     parser.add_argument("--eval-batch-size", default=512, type=int, help="batch size for evaluation")
     parser.add_argument("--epochs", default=10, type=int, metavar="N", help="number of total epochs to run")
     parser.add_argument("-j", "--workers", default=4, type=int, metavar="N", help="number of data loading workers")
