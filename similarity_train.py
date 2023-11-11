@@ -14,8 +14,6 @@ from torchvision.datasets import FashionMNIST
 
 from data.celebA_dataset import CelebADataset
 from variable_width_resnet import resnet50vw, resnet18vw, resnet10vw
- 
-
 
 def train_epoch(model, optimizer, criterion, data_loader, device, epoch, print_freq):
     model.train()
@@ -23,29 +21,29 @@ def train_epoch(model, optimizer, criterion, data_loader, device, epoch, print_f
     running_frac_pos_triplets = 0
     # print(f"TEST DATA_LOADER{data_loader}")   
     for i, data in enumerate(data_loader):
-        optimizer.zero_grad()
-        # NOTE: each data point has a target list which contains classes 
+        optimizer.zero_grad() 
         samples, targets = data[0].to(device), data[1].to(device)
         # print(f"SAMPLES VARIABLE: {samples}")
         # print(f"TARGETS VARIABLE: {targets}")
 
-        embeddings = model(samples)
+        embeddings = model(samples) 
+        print(f"SIZE OF EMBEDDINGS VARIABLE {embeddings.size()}")
         # print(f"EMBEDDINGS FOR DATA POINT {i}: {embeddings}")
 
         loss, frac_pos_triplets = criterion(embeddings, targets)
         loss.backward()
-        optimizer.step()
+        optimizer.step() 
 
-        running_loss += loss.item()
+        running_loss += loss.item() 
         running_frac_pos_triplets += float(frac_pos_triplets)
 
-        # if i % print_freq == print_freq - 1:
-        #     i += 1
-        avg_loss = running_loss / print_freq
-        avg_trip = 100.0 * running_frac_pos_triplets / print_freq
-        print(f"[{epoch:d}, {i:d}] | loss: {avg_loss:.4f} | % avg hard triplets: {avg_trip:.2f}%")
-        running_loss = 0
-        running_frac_pos_triplets = 0
+        if i % print_freq == print_freq - 1:
+            i += 1
+            avg_loss = running_loss / print_freq
+            avg_trip = 100.0 * running_frac_pos_triplets / print_freq
+            print(f"[{epoch:d}, {i:d}] | loss: {avg_loss:.4f} | % avg hard triplets: {avg_trip:.2f}%")
+            running_loss = 0
+            running_frac_pos_triplets = 0
 
 
 def find_best_threshold(dists, targets, device):
@@ -65,13 +63,16 @@ def find_best_threshold(dists, targets, device):
 
 @torch.inference_mode()
 def evaluate(model, loader, device):
+    """
+    TODO: change labels to be the list of groups instead of labels 
+    """
     model.eval()
     embeds, labels = [], []
     dists, targets = None, None
 
     for data in loader:
         samples, _labels = data[0].to(device), data[1]
-        out = model(samples)
+        out = model(samples) 
         embeds.append(out) 
         labels.append(_labels)
 
@@ -84,8 +85,12 @@ def evaluate(model, loader, device):
     targets = labels == labels.t()
 
     mask = torch.ones(dists.size()).triu() - torch.eye(dists.size(0))
-    dists = dists[mask == 1]
+    dists = dists[mask == 1] # keep only upper triangle of dists matrix since it was a symmetric matrix w/ 0 diag
     targets = targets[mask == 1]
+    print(f"TEST DISTS VARIABLE: {dists}")
+    print(f"TEST TARGETS VARIABLE: {targets}")
+
+
 
     threshold, accuracy = find_best_threshold(dists, targets, device)
 
@@ -180,6 +185,7 @@ def main(args):
     )
     val_loader = DataLoader(val_dataset, batch_size=args.eval_batch_size, shuffle=False, num_workers=args.workers)
     test_loader = DataLoader(test_dataset, batch_size=args.eval_batch_size, shuffle=False, num_workers=args.workers)
+    
 
     if args.test_only:
         # We disable the cudnn benchmarking because it can noticeably affect the accuracy

@@ -24,15 +24,15 @@ class TripletMarginLoss(nn.Module):
 
 def batch_hard_triplet_loss(labels, embeddings, margin, p):
     pairwise_dist = torch.cdist(embeddings, embeddings, p=p)
-    print(f"PAIRWISE DIST: {pairwise_dist}")
+    # print(f"PAIRWISE DIST: {pairwise_dist}")
 
     mask_anchor_positive = _get_anchor_positive_triplet_mask(labels).float()
     anchor_positive_dist = mask_anchor_positive * pairwise_dist
-    print(f"ANCHOR POSITIVE DIST: {anchor_positive_dist}")
+    # print(f"ANCHOR POSITIVE DIST: {anchor_positive_dist}")
 
     # hardest positive for every anchor
     hardest_positive_dist, _ = anchor_positive_dist.max(1, keepdim=True)
-    print(f"HARDEST POSITIVE DIST: {hardest_positive_dist}")
+    # print(f"HARDEST POSITIVE DIST: {hardest_positive_dist}")
 
     mask_anchor_negative = _get_anchor_negative_triplet_mask(labels).float()
 
@@ -45,7 +45,7 @@ def batch_hard_triplet_loss(labels, embeddings, margin, p):
 
     triplet_loss = hardest_positive_dist - hardest_negative_dist + margin
     triplet_loss[triplet_loss < 0] = 0
-    print(f"TRIPLET LOSS: {triplet_loss}")
+    # print(f"TRIPLET LOSS: {triplet_loss}")
 
     triplet_loss = triplet_loss.mean()
 
@@ -104,9 +104,9 @@ def _get_anchor_positive_triplet_mask(labels):
     indices_not_equal = ~indices_equal
 
     # Check if labels[i] == labels[j]
-    print(f"LABLES: {labels}")
-    print(f"LABELS.UNSQUEEZE(0): {labels.unsqueeze(0)}")
-    print(f"LABLES.UNSQUEEZE(1): {labels.unsqueeze(1)}")
+    # print(f"LABLES: {labels}")
+    # print(f"LABELS.UNSQUEEZE(0): {labels.unsqueeze(0)}")
+    # print(f"LABLES.UNSQUEEZE(1): {labels.unsqueeze(1)}")
     labels_equal = labels.unsqueeze(0) == labels.unsqueeze(1)
 
     return labels_equal & indices_not_equal

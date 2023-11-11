@@ -56,7 +56,7 @@ class PKSampler(Sampler):
         if this affects performance...
         """
         # Shuffle samples within groups
-        for key in self.groups:
+        for key in self.groups: 
             random.shuffle(self.groups[key])
 
         # Keep track of the number of samples left for each group
@@ -68,15 +68,16 @@ class PKSampler(Sampler):
         # Select p groups at random from valid/remaining groups
         group_ids = list(group_samples_remaining.keys())
         # selected_group_idxs = torch.multinomial(torch.ones(len(group_ids)), self.p).tolist()
-        for i in group_ids:
-            group_id = group_ids[i]
-            group = self.groups[group_id]
-            for _ in range(self.k):
-                # No need to pick samples at random since group samples are shuffled
-                sample_idx = len(group) - group_samples_remaining[group_id]
-                yield group[sample_idx]
-                group_samples_remaining[group_id] -= 1
+        while len(group_samples_remaining) >= self.p:
+            for i in group_ids:
+                group_id = group_ids[i]
+                group = self.groups[group_id]
+                for _ in range(self.k):
+                    # No need to pick samples at random since group samples are shuffled
+                    sample_idx = len(group) - group_samples_remaining[group_id]
+                    yield group[sample_idx]
+                    group_samples_remaining[group_id] -= 1
 
-            # Don't sample from group if it has less than k samples remaining
-            if group_samples_remaining[group_id] < self.k:
-                group_samples_remaining.pop(group_id)
+                # Don't sample from group if it has less than k samples remaining
+                if group_samples_remaining[group_id] < self.k:
+                    group_samples_remaining.pop(group_id)
