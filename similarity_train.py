@@ -7,14 +7,20 @@ from triplet_loss import TripletMarginLoss
 # from model import EmbeddingNet
 from triplet_loss_sampler import PKSampler
 
-from torch.optim import Adam 
+from torch.optim import Adam  
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset, Subset
-from torchvision.datasets import FashionMNIST
-
+from torchvision.datasets import FashionMNIST 
+ 
 from data.celebA_dataset import CelebADataset
 from variable_width_resnet import resnet50vw, resnet18vw, resnet10vw
 
+
+""" 
+Learns 2-d embeddings for each data point via contrastive triplet loss for the task of predicting the group of each data point
+"""
+
+# TODO: figure out how to change embedding size // this is just the number of classes we have...
 def train_epoch(model, optimizer, criterion, data_loader, device, epoch, print_freq):
     model.train()
     running_loss = 0
@@ -25,10 +31,9 @@ def train_epoch(model, optimizer, criterion, data_loader, device, epoch, print_f
         samples, targets = data[0].to(device), data[1].to(device)
         # print(f"SAMPLES VARIABLE: {samples}")
         # print(f"TARGETS VARIABLE: {targets}")
-
+ 
         embeddings = model(samples) 
-        print(f"SIZE OF EMBEDDINGS VARIABLE {embeddings.size()}")
-        # print(f"EMBEDDINGS FOR DATA POINT {i}: {embeddings}")
+        # current embeddings size is 64 x 2...
 
         loss, frac_pos_triplets = criterion(embeddings, targets)
         loss.backward()
@@ -62,37 +67,47 @@ def find_best_threshold(dists, targets, device):
 
 
 @torch.inference_mode()
-def evaluate(model, loader, device):
-    """
-    TODO: change labels to be the list of groups instead of labels 
-    """
+def evaluate(model, loader, device, train_targets):
     model.eval()
     embeds, labels = [], []
     dists, targets = None, None
 
+    groups = [] 
+ 
+    # figured out that group labels contained in data[2]
     for data in loader:
-        samples, _labels = data[0].to(device), data[1]
+        samples, _labels, _groups = data[0].to(device), data[1], data[2]
         out = model(samples) 
         embeds.append(out) 
-        labels.append(_labels)
+        labels.append(_labels) 
+        groups.append(_groups)
 
     embeds = torch.cat(embeds, dim=0)
     labels = torch.cat(labels, dim=0)
+    groups = torch.cat(groups, dim=0)
 
     dists = torch.cdist(embeds, embeds)
 
     labels = labels.unsqueeze(0)
     targets = labels == labels.t()
 
+    groups = groups.unsqueeze(0)
+    group_targets = groups == groups.t()
+
     mask = torch.ones(dists.size()).triu() - torch.eye(dists.size(0))
     dists = dists[mask == 1] # keep only upper triangle of dists matrix since it was a symmetric matrix w/ 0 diag
     targets = targets[mask == 1]
-    print(f"TEST DISTS VARIABLE: {dists}")
-    print(f"TEST TARGETS VARIABLE: {targets}")
+
+    group_targets = group_targets[mask == 1]
+
+    # print(f"TEST DISTS VARIABLE: {dists}")
+    # print(f"TEST TARGETS VARIABLE: {targets}")
 
 
 
-    threshold, accuracy = find_best_threshold(dists, targets, device)
+    # threshold, accuracy = find_best_threshold(dists, targets, device)
+    threshold, accuracy = find_best_threshold(dists, group_targets, device)
+
 
     print(f"accuracy: {accuracy:.3f}%, threshold: {threshold:.2f}")
 
@@ -185,7 +200,6 @@ def main(args):
     )
     val_loader = DataLoader(val_dataset, batch_size=args.eval_batch_size, shuffle=False, num_workers=args.workers)
     test_loader = DataLoader(test_dataset, batch_size=args.eval_batch_size, shuffle=False, num_workers=args.workers)
-    
 
     if args.test_only:
         # We disable the cudnn benchmarking because it can noticeably affect the accuracy
@@ -199,7 +213,7 @@ def main(args):
         train_epoch(model, optimizer, criterion, train_loader, device, epoch, args.print_freq)
 
         print("Evaluating...")
-        evaluate(model, test_loader, device)
+        evaluate(model, test_loader, device, targets)
 
         print("Saving...")
         save(model, epoch, args.save_dir, "ckpt.pth")
