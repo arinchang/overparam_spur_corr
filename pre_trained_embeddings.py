@@ -1,10 +1,14 @@
+"""
+Run a round of inference to compute embeddings from pretrained resnet on imagenet for all the data points, and evaluate on task of 
+predicting which points belong to the same group
+"""
 import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms, datasets, models
 from PIL import Image
 import os
 import pandas as pd 
-import numpy as np 
+import numpy as np  
 from torch.utils.data import Dataset, Subset
 from torch.utils.data import DataLoader
 from data.celebA_dataset import CelebADataset
@@ -41,15 +45,11 @@ def evaluate(model, loader, device):
         labels.append(_labels) 
         groups.append(_groups)
     
-    # print(f"embeds size before cat {len(embeds)}")
-
     embeds = torch.cat(embeds, dim=0)
     labels = torch.cat(labels, dim=0)
     groups = torch.cat(groups, dim=0)
 
     embeds = embeds.resize(embeds.size()[0], embeds.size()[1])
-    print(f"embeds size {embeds.size()}")
-
     dists = torch.cdist(embeds, embeds)
 
     labels = labels.unsqueeze(0)
@@ -58,62 +58,14 @@ def evaluate(model, loader, device):
     groups = groups.unsqueeze(0)
     group_targets = groups == groups.t()
 
-    print(f"dists size {dists.size()}")
     mask = torch.ones(dists.size()).triu() - torch.eye(dists.size(0))
     dists = dists[mask == 1] # keep only upper triangle of dists matrix since it was a symmetric matrix w/ 0 diag
     targets = targets[mask == 1]
 
     group_targets = group_targets[mask == 1]
 
-    # threshold, accuracy = find_best_threshold(dists, targets, device)
     threshold, accuracy = find_best_threshold(dists, group_targets, device)
-
-
     print(f"accuracy: {accuracy:.3f}%, threshold: {threshold:.2f}")
-
-
-# @torch.inference_mode()
-# def evaluate(model, loader, device):
-#     model.eval()
-#     embeds, labels = [], []
-#     dists, targets = None, None
-
-#     groups = [] 
-
-#     for data in loader:
-#         samples, _labels, _groups = data[0].to(device), data[1], data[2]
-#         out = model(samples) 
-#         embeds.append(out) 
-#         labels.append(_labels) 
-#         groups.append(_groups)
-
-#     embeds = torch.cat(embeds, dim=0)
-#     labels = torch.cat(labels, dim=0)
-#     groups = torch.cat(groups, dim=0)
-
-#     dists = torch.cdist(embeds, embeds)
-
-#     labels = labels.unsqueeze(0)
-#     targets = labels == labels.t()
-
-#     groups = groups.unsqueeze(0)
-#     group_targets = groups == groups.t()
-
-#     test_allocate = torch.ones(100, 100)
-#     print(f"test_ones {test_allocate}")
-
-#     print(f"dists.size(): {dists.size()}")
-#     mask = torch.ones(dists.size()).triu() - torch.eye(dists.size(0))
-#     dists = dists[mask == 1] # keep only upper triangle of dists matrix since it was a symmetric matrix w/ 0 diag
-#     targets = targets[mask == 1]
-
-#     group_targets = group_targets[mask == 1]
-
-#     threshold, accuracy = find_best_threshold(dists, group_targets, device)
-
-
-#     print(f"accuracy: {accuracy:.3f}%, threshold: {threshold:.2f}")
-
 
 def load_celebA_dataset():
     full_dataset = CelebADataset(root_dir="/global/scratch/users/arinchang/celebA_dataset",
@@ -198,45 +150,7 @@ def main():
 
 
 
-    # embeds, labels = [], []
-    # dists, targets = None, None
-    # groups = [] 
-
     
-    # Set the model to evaluation mode
-    # model.eval()
-    
-    # compute embeddings for all training data points 
-    # for data in loader:
-    #     samples, _labels, _groups = data[0].to(device), data[1], data[2]
-    #     with torch.inference_mode():
-    #         out = model(samples) 
-    #     embeds.append(out) 
-    #     labels.append(_labels) 
-    #     groups.append(_groups)
-
-    # embeddings = torch.cat(embeds, dim=0) # embeddings are of size [162770, 2048, 1, 1]
-    # labels = torch.cat(labels, dim=0)
-    # groups = torch.cat(groups, dim=0)
-
-    # evaluate the embeddings 
-    # dists = torch.cdist(embeddings, embeddings)
-
-    # labels = labels.unsqueeze(0)
-    # targets = labels == labels.t()
-
-    # groups = groups.unsqueeze(0)
-    # group_targets = groups == groups.t()
-
-    # mask = torch.ones(dists.size()).triu() - torch.eye(dists.size(0))
-    # dists = dists[mask == 1] # keep only upper triangle of dists matrix since it was a symmetric matrix w/ 0 diag
-    # targets = targets[mask == 1]
-    # group_targets = group_targets[mask == 1]
-
-    # threshold, accuracy = find_best_threshold(dists, group_targets, device)
-
-
-    # print(f"accuracy: {accuracy:.3f}%, threshold: {threshold:.2f}")
 
 
 
